@@ -120,8 +120,8 @@ func main() {
 	tw1.AppendHeader(table.Row{"Parameter", "Value"})
 	tw1.AppendRows([]table.Row{
 		{"Device Wattage", fmt.Sprintf("%.1f W (%.3f kW)", result.Watts, result.Watts/1000.0)},
-		{"Selected Plan", fmt.Sprintf("%s - %s", result.PlanID, planDesc)},
-		{"Effective Rate", fmt.Sprintf("$%.5f per kWh (Weighted 24/7 Average)", result.EffectiveRate)},
+		{"Selected Plan", fmt.Sprintf("%s - %s [1]", result.PlanID, planDesc)},
+		{"Effective Rate", fmt.Sprintf("$%.5f per kWh (Weighted 24/7 Average) [2]", result.EffectiveRate)},
 	})
 	tw1.Render()
 
@@ -131,7 +131,7 @@ func main() {
 	tw2.SetOutputMirror(os.Stdout)
 	tw2.SetStyle(table.StyleRounded)
 	tw2.SetTitle("ESTIMATED RUNNING COSTS")
-	tw2.AppendHeader(table.Row{"Period", "Energy Consumed", "Estimated Cost"})
+	tw2.AppendHeader(table.Row{"Period", "Energy Consumed", "Estimated Cost [3]"})
 	tw2.AppendRows([]table.Row{
 		{"Daily", fmt.Sprintf("%.2f kWh", result.DailyEnergy), fmt.Sprintf("$%.2f", result.DailyCost)},
 		{"Monthly (30.42 days avg)", fmt.Sprintf("%.2f kWh", result.DailyEnergy*30.4167), fmt.Sprintf("$%.2f", result.MonthlyCost)},
@@ -141,12 +141,16 @@ func main() {
 
 	fmt.Println()
 
+	var dbSource string
 	if !loadedFromDisk {
-		fmt.Println("Note: Using embedded 2026 rates fallback database.")
+		dbSource = "embedded 2026 rates fallback database"
 	} else {
-		fmt.Printf("Note: Using database %q (last updated %s).\n", *dbFlag, db.LastUpdated)
+		dbSource = fmt.Sprintf("database %q (last updated %s)", *dbFlag, db.LastUpdated)
 	}
-	fmt.Println("Marginal calculations based on total bundled rates.")
+
+	fmt.Printf("[1] Selected rates loaded from PG&E %s.\n", dbSource)
+	fmt.Printf("[2] Calculated using hour-by-hour calendar scheduling weights for year %d.\n", *yearFlag)
+	fmt.Println("[3] Marginal calculations based on total bundled rates.")
 }
 
 func handleFetch() {

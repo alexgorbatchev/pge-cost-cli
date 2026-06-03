@@ -8,6 +8,8 @@ import (
 	"path/filepath"
 	"pge-cost/pkg/domain"
 	"strings"
+
+	"github.com/jedib0t/go-pretty/v6/table"
 )
 
 func main() {
@@ -111,26 +113,41 @@ func main() {
 		planDesc = fmt.Sprintf("%s (Tier %d)", planDesc, *tierFlag)
 	}
 
-	fmt.Println("==================================================")
-	fmt.Printf(fmt.Sprintf("PG%%-%ds DEVICE RUNNING COST ESTIMATOR (%%d)\n", 22), "E 24/7", *yearFlag)
-	fmt.Println("==================================================")
-	fmt.Fprintf(os.Stdout, "Device Wattage : %.1f W (%.3f kW)\n", result.Watts, result.Watts/1000.0)
-	fmt.Fprintf(os.Stdout, "Selected Plan  : %s - %s\n", result.PlanID, planDesc)
-	fmt.Fprintf(os.Stdout, "Effective Rate : $%.5f per kWh (Weighted 24/7 Average)\n", result.EffectiveRate)
-	fmt.Fprintf(os.Stdout, "Daily Energy   : %.2f kWh\n", result.DailyEnergy)
-	fmt.Println("--------------------------------------------------")
-	fmt.Println("ESTIMATED RUNNING COSTS:")
-	fmt.Fprintf(os.Stdout, "Daily Cost     : $%.2f\n", result.DailyCost)
-	fmt.Fprintf(os.Stdout, "Monthly Cost   : $%.2f  (30.42 days average)\n", result.MonthlyCost)
-	fmt.Fprintf(os.Stdout, "Annual Cost    : $%.2f\n", result.AnnualCost)
-	fmt.Println("--------------------------------------------------")
+	tw1 := table.NewWriter()
+	tw1.SetOutputMirror(os.Stdout)
+	tw1.SetStyle(table.StyleRounded)
+	tw1.SetTitle("PG&E 24/7 DEVICE SPECIFICATIONS (%d)", *yearFlag)
+	tw1.AppendHeader(table.Row{"Parameter", "Value"})
+	tw1.AppendRows([]table.Row{
+		{"Device Wattage", fmt.Sprintf("%.1f W (%.3f kW)", result.Watts, result.Watts/1000.0)},
+		{"Selected Plan", fmt.Sprintf("%s - %s", result.PlanID, planDesc)},
+		{"Effective Rate", fmt.Sprintf("$%.5f per kWh (Weighted 24/7 Average)", result.EffectiveRate)},
+	})
+	tw1.Render()
+
+	fmt.Println()
+
+	tw2 := table.NewWriter()
+	tw2.SetOutputMirror(os.Stdout)
+	tw2.SetStyle(table.StyleRounded)
+	tw2.SetTitle("ESTIMATED RUNNING COSTS")
+	tw2.AppendHeader(table.Row{"Period", "Energy Consumed", "Estimated Cost"})
+	tw2.AppendRows([]table.Row{
+		{"Daily", fmt.Sprintf("%.2f kWh", result.DailyEnergy), fmt.Sprintf("$%.2f", result.DailyCost)},
+		{"Monthly", fmt.Sprintf("%.2f kWh", result.DailyEnergy*30.4167), fmt.Sprintf("$%.2f", result.MonthlyCost)},
+		{"Annual", fmt.Sprintf("%.2f kWh", result.DailyEnergy*365.0), fmt.Sprintf("$%.2f", result.AnnualCost)},
+	})
+	tw2.AppendFooter(table.Row{"Monthly Cost Basis", "", "30.42 Days Average"})
+	tw2.Render()
+
+	fmt.Println()
+
 	if !loadedFromDisk {
 		fmt.Println("Note: Using embedded 2026 rates fallback database.")
 	} else {
-		fmt.Fprintf(os.Stdout, "Note: Using database %q (last updated %s).\n", *dbFlag, db.LastUpdated)
+		fmt.Printf("Note: Using database %q (last updated %s).\n", *dbFlag, db.LastUpdated)
 	}
 	fmt.Println("Marginal calculations based on total bundled rates.")
-	fmt.Println("==================================================")
 }
 
 func handleFetch() {
@@ -208,19 +225,26 @@ func handleFetch() {
 	eelec := updatedDb.Plans["E-ELEC"]
 	evb := updatedDb.Plans["EV-B"]
 
-	fmt.Println("\n==================================================")
-	fmt.Println("PG&E RATES DATABASE SYNCHRONIZATION SUCCESS")
-	fmt.Println("==================================================")
-	fmt.Fprintf(os.Stdout, "Source URL   : %s\n", *urlFlag)
-	fmt.Fprintf(os.Stdout, "Destination  : %s\n", *dbFlag)
-	fmt.Fprintf(os.Stdout, "Last Updated : %s\n", updatedDb.LastUpdated)
-	fmt.Println("--------------------------------------------------")
-	fmt.Println("UPDATED RATES SUMMARY:")
-	fmt.Fprintf(os.Stdout, "- E-1      (Tiered)     : Tier 1 = $%.5f, Tier 2 = $%.5f\n", e1.Tier1, e1.Tier2)
-	fmt.Fprintf(os.Stdout, "- E-TOU-C  (TOU Everyday) : Summer Peak = $%.5f, Winter Peak = $%.5f\n", etouc.Rates.Summer.Peak, etouc.Rates.Winter.Peak)
-	fmt.Fprintf(os.Stdout, "- E-TOU-D  (TOU Weekdays) : Summer Peak = $%.5f, Winter Peak = $%.5f\n", etoud.Rates.Summer.Peak, etoud.Rates.Winter.Peak)
-	fmt.Fprintf(os.Stdout, "- EV2      (Everyday EV): Summer Peak = $%.5f, Winter Peak = $%.5f\n", ev2.Rates.Summer.Peak, ev2.Rates.Winter.Peak)
-	fmt.Fprintf(os.Stdout, "- E-ELEC   (Elect Home) : Summer Peak = $%.5f, Winter Peak = $%.5f\n", eelec.Rates.Summer.Peak, eelec.Rates.Winter.Peak)
-	fmt.Fprintf(os.Stdout, "- EV-B     (Metered EV) : Summer Peak = $%.5f, Winter Peak = $%.5f\n", evb.Rates.Summer.Peak, evb.Rates.Winter.Peak)
-	fmt.Println("==================================================")
+	fmt.Println()
+	tw := table.NewWriter()
+	tw.SetOutputMirror(os.Stdout)
+	tw.SetStyle(table.StyleRounded)
+	tw.SetTitle("PG&E RATES DATABASE SYNCHRONIZATION SUCCESS")
+	tw.AppendHeader(table.Row{"Sync Detail / Rate Plan", "Value"})
+	tw.AppendRows([]table.Row{
+		{"Source URL", *urlFlag},
+		{"Destination", *dbFlag},
+		{"Last Updated", updatedDb.LastUpdated},
+	})
+	tw.AppendSeparator()
+	tw.AppendRows([]table.Row{
+		{"Plan E-1 (Tiered)", fmt.Sprintf("Tier 1 = $%.5f, Tier 2 = $%.5f", e1.Tier1, e1.Tier2)},
+		{"Plan E-TOU-C (Everyday)", fmt.Sprintf("Summer Peak = $%.5f, Winter Peak = $%.5f", etouc.Rates.Summer.Peak, etouc.Rates.Winter.Peak)},
+		{"Plan E-TOU-D (Weekdays)", fmt.Sprintf("Summer Peak = $%.5f, Winter Peak = $%.5f", etoud.Rates.Summer.Peak, etoud.Rates.Winter.Peak)},
+		{"Plan EV2 (Everyday EV)", fmt.Sprintf("Summer Peak = $%.5f, Winter Peak = $%.5f", ev2.Rates.Summer.Peak, ev2.Rates.Winter.Peak)},
+		{"Plan E-ELEC (Elect Home)", fmt.Sprintf("Summer Peak = $%.5f, Winter Peak = $%.5f", eelec.Rates.Summer.Peak, eelec.Rates.Winter.Peak)},
+		{"Plan EV-B (Metered EV)", fmt.Sprintf("Summer Peak = $%.5f, Winter Peak = $%.5f", evb.Rates.Summer.Peak, evb.Rates.Winter.Peak)},
+	})
+	tw.Render()
+	fmt.Println()
 }

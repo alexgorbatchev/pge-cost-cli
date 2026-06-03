@@ -134,10 +134,9 @@ func main() {
 	tw2.AppendHeader(table.Row{"Period", "Energy Consumed", "Estimated Cost"})
 	tw2.AppendRows([]table.Row{
 		{"Daily", fmt.Sprintf("%.2f kWh", result.DailyEnergy), fmt.Sprintf("$%.2f", result.DailyCost)},
-		{"Monthly", fmt.Sprintf("%.2f kWh", result.DailyEnergy*30.4167), fmt.Sprintf("$%.2f", result.MonthlyCost)},
+		{"Monthly (30.42 days avg)", fmt.Sprintf("%.2f kWh", result.DailyEnergy*30.4167), fmt.Sprintf("$%.2f", result.MonthlyCost)},
 		{"Annual", fmt.Sprintf("%.2f kWh", result.DailyEnergy*365.0), fmt.Sprintf("$%.2f", result.AnnualCost)},
 	})
-	tw2.AppendFooter(table.Row{"Monthly Cost Basis", "", "30.42 Days Average"})
 	tw2.Render()
 
 	fmt.Println()

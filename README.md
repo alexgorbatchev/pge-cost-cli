@@ -9,7 +9,7 @@ Rather than relying on naive flat-rate estimates, `pge-cost` simulates the opera
 ## Features
 
 - **Dynamic Scheduling Engine**: Simulates all 8,760 hours of a calendar year to determine exact time-of-use (TOU) pricing.
-- **Observed Holiday Awareness**: Handles PG&S's 8 standard residential legal holidays (with weekend-observance shifting).
+- **Observed Holiday Awareness**: Handles PG&E's 8 standard residential legal holidays (with weekend-observance shifting).
 - **Supports All Major PG&E Residential Plans**:
   - **`E-1`**: Tiered General Service (with baseline vs. marginal cost defaults).
   - **`E-TOU-C`**: Peak Pricing 4:00 PM – 9:00 PM Everyday.
@@ -19,25 +19,6 @@ Rather than relying on naive flat-rate estimates, `pge-cost` simulates the opera
   - **`EV-B`**: Residential EV with a dedicated meter (separate peak windows).
 - **Embedded Rates Fallback**: Works completely "out of the box" using baked-in rates, requiring no initial files or internet access.
 - **Automated DB Sync**: Includes a command to download, parse, and overlay the latest CPUC-approved rates directly from PG&E's official published tariff spreadsheets.
-
----
-
-## Installation & Build
-
-### Prerequisites
-- [Go](https://go.dev/) 1.26 or later
-- [Just](https://github.com/casey/just) command runner (optional, but convenient)
-
-### Build from Source
-1. Clone the repository.
-2. Build the executable binary:
-   ```bash
-   go build -o pge-cost main.go
-   ```
-   Or using `just`:
-   ```bash
-   just build
-   ```
 
 ---
 
@@ -55,22 +36,29 @@ Estimate continuous 24/7 cost for a device by specifying its constant power draw
 
 #### Expected Output:
 ```text
-==================================================
-PGE 24/7                 DEVICE RUNNING COST ESTIMATOR (2026)
-==================================================
-Device Wattage : 150.0 W (0.150 kW)
-Selected Plan  : E-TOU-C - Residential Time-Of-Use (4-9 PM Everyday)
-Effective Rate : $0.39094 per kWh (Weighted 24/7 Average)
-Daily Energy   : 3.60 kWh
---------------------------------------------------
-ESTIMATED RUNNING COSTS:
-Daily Cost     : $1.41
-Monthly Cost   : $42.81  (30.42 days average)
-Annual Cost    : $513.69
---------------------------------------------------
-Note: Using database "rates.json" (last updated 2026-06-03).
-Marginal calculations based on total bundled rates.
-==================================================
+╭──────────────────────────────────────────────────────────────────────────╮
+│ PG&E 24/7 DEVICE SPECIFICATIONS (2026)                                   │
+├────────────────┬─────────────────────────────────────────────────────────┤
+│ PARAMETER      │ VALUE                                                   │
+├────────────────┼─────────────────────────────────────────────────────────┤
+│ Device Wattage │ 150.0 W (0.150 kW)                                      │
+│ Selected Plan  │ E-TOU-C - Residential Time-Of-Use (4-9 PM Everyday) [1] │
+│ Effective Rate │ $0.39094 per kWh (Weighted 24/7 Average) [2]            │
+╰────────────────┴─────────────────────────────────────────────────────────╯
+
+╭─────────────────────────────────────────────────────────────────╮
+│ ESTIMATED RUNNING COSTS                                         │
+├──────────────────────────┬─────────────────┬────────────────────┤
+│ PERIOD                   │ ENERGY CONSUMED │ ESTIMATED COST [3] │
+├──────────────────────────┼─────────────────┼────────────────────┤
+│ Daily                    │ 3.60 kWh        │ $1.41              │
+│ Monthly (30.42 days avg) │ 109.50 kWh      │ $42.81             │
+│ Annual                   │ 1314.00 kWh     │ $513.69            │
+╰──────────────────────────┴─────────────────┴────────────────────╯
+
+[1] Selected rates loaded from PG&E database "rates.json" (last updated 2026-06-03).
+[2] Calculated using hour-by-hour calendar scheduling weights for year 2026.
+[3] Marginal calculations based on total bundled rates.
 ```
 
 #### E-1 Tiered Calculations
@@ -91,6 +79,41 @@ You can automatically synchronize local database records with live PG&E rate str
 # Download and synchronize the local database
 ./pge-cost fetch
 ```
+
+---
+
+## Installation & Build
+
+### 1. Download Precompiled Binaries
+You can download the precompiled static binaries for macOS and Linux on both Intel/AMD (`amd64`) and Apple Silicon (`arm64`) architectures directly from the GitHub project's [Releases](https://github.com/alexgorbatchev/pge-cost-cli/releases) page. No Go toolchain is required.
+
+Once downloaded, extract the archive and run the executable:
+```bash
+# Example for Linux AMD64
+tar -xzf pge-cost_v1.0.0_linux_amd64.tar.gz
+./pge-cost --watts 100 --plan E-TOU-C
+```
+
+### 2. Build from Source
+
+#### Prerequisites
+- [Go](https://go.dev/) 1.26 or later
+- [Just](https://github.com/casey/just) command runner (optional, but convenient)
+
+#### Build Commands
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/alexgorbatchev/pge-cost-cli.git
+   cd pge-cost-cli
+   ```
+2. Compile the executable binary:
+   ```bash
+   go build -o pge-cost main.go
+   ```
+   Or using `just`:
+   ```bash
+   just build
+   ```
 
 ---
 

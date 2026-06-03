@@ -184,10 +184,15 @@ func handleFetch() {
 	}
 
 	// Parse fetch flags (omit "fetch" word)
+	var parseErr error
 	if len(os.Args) > 2 {
-		fetchCmd.Parse(os.Args[2:])
+		parseErr = fetchCmd.Parse(os.Args[2:])
 	} else {
-		fetchCmd.Parse([]string{})
+		parseErr = fetchCmd.Parse([]string{})
+	}
+	if parseErr != nil {
+		fmt.Fprintf(os.Stderr, "Error parsing fetch flags: %v\n", parseErr)
+		os.Exit(1)
 	}
 
 	// Step 1: Create local .tmp directory if not exists
@@ -207,7 +212,9 @@ func handleFetch() {
 		fmt.Fprintf(os.Stderr, "Error: download failed: %v\n", err)
 		os.Exit(1)
 	}
-	defer os.Remove(tmpFile) // Best effort cleanup
+	defer func() {
+		_ = os.Remove(tmpFile) // Best effort cleanup
+	}()
 
 	fmt.Println("Parsing rates from downloaded spreadsheet...")
 

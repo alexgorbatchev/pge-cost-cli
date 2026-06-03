@@ -10,7 +10,15 @@ import (
 func TestParseSpreadsheet_Success(t *testing.T) {
 	// Create a mock excel file
 	f := excelize.NewFile()
-	defer f.Close()
+	defer func() {
+		_ = f.Close() // best-effort cleanup
+	}()
+
+	setCell := func(sheet, axis string, value interface{}) {
+		if err := f.SetCellValue(sheet, axis, value); err != nil {
+			t.Fatalf("failed to set cell %s to %v: %v", axis, value, err)
+		}
+	}
 
 	// 1. Create main sheet
 	const mainSheet = "Res Inclu TOU_260301-Present"
@@ -26,42 +34,42 @@ func TestParseSpreadsheet_Success(t *testing.T) {
 	// row 1: headers
 	// row 2: [Col 0: Residential Schedules, Col 8: 0.32561, Col 9: 0.40702]
 	// row 3: [Col 0: E1, ESR, ES,  ET]
-	f.SetCellValue(mainSheet, "A3", "Residential Schedules:")
-	f.SetCellValue(mainSheet, "I3", "0.32561") // Column I is index 8
-	f.SetCellValue(mainSheet, "J3", "0.40702") // Column J is index 9
-	f.SetCellValue(mainSheet, "A4", "E1, ESR, ES,  ET")
+	setCell(mainSheet, "A3", "Residential Schedules:")
+	setCell(mainSheet, "I3", "0.32561") // Column I is index 8
+	setCell(mainSheet, "J3", "0.40702") // Column J is index 9
+	setCell(mainSheet, "A4", "E1, ESR, ES,  ET")
 
 	// Set up E-TOU-C data (starts at row 8, which is row index 8, i.e. cell row 9)
-	f.SetCellValue(mainSheet, "A9", "Residential Time-of-Use\r\nRate Schedule E-TOU-C")
-	f.SetCellValue(mainSheet, "H9", "Summer")
-	f.SetCellValue(mainSheet, "I9", "Peak")
-	f.SetCellValue(mainSheet, "J9", "0.52240") // Col J is index 9
+	setCell(mainSheet, "A9", "Residential Time-of-Use\r\nRate Schedule E-TOU-C")
+	setCell(mainSheet, "H9", "Summer")
+	setCell(mainSheet, "I9", "Peak")
+	setCell(mainSheet, "J9", "0.52240") // Col J is index 9
 
-	f.SetCellValue(mainSheet, "I10", "Off-Peak")
-	f.SetCellValue(mainSheet, "J10", "0.39940")
+	setCell(mainSheet, "I10", "Off-Peak")
+	setCell(mainSheet, "J10", "0.39940")
 
-	f.SetCellValue(mainSheet, "H11", "Winter")
-	f.SetCellValue(mainSheet, "I11", "Peak")
-	f.SetCellValue(mainSheet, "J11", "0.39757")
+	setCell(mainSheet, "H11", "Winter")
+	setCell(mainSheet, "I11", "Peak")
+	setCell(mainSheet, "J11", "0.39757")
 
-	f.SetCellValue(mainSheet, "I12", "Off-Peak")
-	f.SetCellValue(mainSheet, "J12", "0.36757")
+	setCell(mainSheet, "I12", "Off-Peak")
+	setCell(mainSheet, "J12", "0.36757")
 
 	// Set up E-TOU-D data (starts at row 12, row index 12, i.e. cell row 13)
-	f.SetCellValue(mainSheet, "A13", "Residential Time-of-Use\r\nRate Schedule E-TOU-D")
-	f.SetCellValue(mainSheet, "H13", "Summer")
-	f.SetCellValue(mainSheet, "I13", "Peak")
-	f.SetCellValue(mainSheet, "J13", "0.47708")
+	setCell(mainSheet, "A13", "Residential Time-of-Use\r\nRate Schedule E-TOU-D")
+	setCell(mainSheet, "H13", "Summer")
+	setCell(mainSheet, "I13", "Peak")
+	setCell(mainSheet, "J13", "0.47708")
 
-	f.SetCellValue(mainSheet, "I14", "Off-Peak")
-	f.SetCellValue(mainSheet, "J14", "0.34212")
+	setCell(mainSheet, "I14", "Off-Peak")
+	setCell(mainSheet, "J14", "0.34212")
 
-	f.SetCellValue(mainSheet, "H15", "Winter")
-	f.SetCellValue(mainSheet, "I15", "Peak")
-	f.SetCellValue(mainSheet, "J15", "0.38747")
+	setCell(mainSheet, "H15", "Winter")
+	setCell(mainSheet, "I15", "Peak")
+	setCell(mainSheet, "J15", "0.38747")
 
-	f.SetCellValue(mainSheet, "I16", "Off-Peak")
-	f.SetCellValue(mainSheet, "J16", "0.34886")
+	setCell(mainSheet, "I16", "Off-Peak")
+	setCell(mainSheet, "J16", "0.34886")
 
 	// 2. Create tech sheet
 	const techSheet = "ElecVehicle&Tech_260301-Present"
@@ -71,70 +79,70 @@ func TestParseSpreadsheet_Success(t *testing.T) {
 	}
 
 	// EV-B (starts at row index 1, i.e. row 2)
-	f.SetCellValue(techSheet, "A2", "Rate Schedule EV, Rate B")
-	f.SetCellValue(techSheet, "G2", "Summer")
-	f.SetCellValue(techSheet, "H2", "Peak")
-	f.SetCellValue(techSheet, "I2", "0.62131") // Col I is index 8
+	setCell(techSheet, "A2", "Rate Schedule EV, Rate B")
+	setCell(techSheet, "G2", "Summer")
+	setCell(techSheet, "H2", "Peak")
+	setCell(techSheet, "I2", "0.62131") // Col I is index 8
 
-	f.SetCellValue(techSheet, "H3", "Part-Peak")
-	f.SetCellValue(techSheet, "I3", "0.37720")
+	setCell(techSheet, "H3", "Part-Peak")
+	setCell(techSheet, "I3", "0.37720")
 
-	f.SetCellValue(techSheet, "H4", "Off-Peak")
-	f.SetCellValue(techSheet, "I4", "0.26465")
+	setCell(techSheet, "H4", "Off-Peak")
+	setCell(techSheet, "I4", "0.26465")
 
-	f.SetCellValue(techSheet, "G5", "Winter")
-	f.SetCellValue(techSheet, "H5", "Peak")
-	f.SetCellValue(techSheet, "I5", "0.43878")
+	setCell(techSheet, "G5", "Winter")
+	setCell(techSheet, "H5", "Peak")
+	setCell(techSheet, "I5", "0.43878")
 
-	f.SetCellValue(techSheet, "H6", "Part-Peak")
-	f.SetCellValue(techSheet, "I6", "0.30677")
+	setCell(techSheet, "H6", "Part-Peak")
+	setCell(techSheet, "I6", "0.30677")
 
-	f.SetCellValue(techSheet, "H7", "Off-Peak")
-	f.SetCellValue(techSheet, "I7", "0.23504")
+	setCell(techSheet, "H7", "Off-Peak")
+	setCell(techSheet, "I7", "0.23504")
 
 	// EV2 (starts at row index 7, i.e. row 8)
-	f.SetCellValue(techSheet, "A8", "Rate Schedule EV2")
-	f.SetCellValue(techSheet, "G8", "Summer")
-	f.SetCellValue(techSheet, "H8", "Peak")
-	f.SetCellValue(techSheet, "I8", "0.53809")
+	setCell(techSheet, "A8", "Rate Schedule EV2")
+	setCell(techSheet, "G8", "Summer")
+	setCell(techSheet, "H8", "Peak")
+	setCell(techSheet, "I8", "0.53809")
 
-	f.SetCellValue(techSheet, "H9", "Part-Peak")
-	f.SetCellValue(techSheet, "I9", "0.42760")
+	setCell(techSheet, "H9", "Part-Peak")
+	setCell(techSheet, "I9", "0.42760")
 
-	f.SetCellValue(techSheet, "H10", "Off-Peak")
-	f.SetCellValue(techSheet, "I10", "0.22558")
+	setCell(techSheet, "H10", "Off-Peak")
+	setCell(techSheet, "I10", "0.22558")
 
-	f.SetCellValue(techSheet, "G11", "Winter")
-	f.SetCellValue(techSheet, "H11", "Peak")
-	f.SetCellValue(techSheet, "I11", "0.41099")
+	setCell(techSheet, "G11", "Winter")
+	setCell(techSheet, "H11", "Peak")
+	setCell(techSheet, "I11", "0.41099")
 
-	f.SetCellValue(techSheet, "H12", "Part-Peak")
-	f.SetCellValue(techSheet, "I12", "0.39428")
+	setCell(techSheet, "H12", "Part-Peak")
+	setCell(techSheet, "I12", "0.39428")
 
-	f.SetCellValue(techSheet, "H13", "Off-Peak")
-	f.SetCellValue(techSheet, "I13", "0.22558")
+	setCell(techSheet, "H13", "Off-Peak")
+	setCell(techSheet, "I13", "0.22558")
 
 	// E-ELEC (starts at row index 13, i.e. row 14)
-	f.SetCellValue(techSheet, "A14", "Rate Schedule E-ELEC")
-	f.SetCellValue(techSheet, "G14", "Summer")
-	f.SetCellValue(techSheet, "H14", "Peak")
-	f.SetCellValue(techSheet, "I14", "0.55214")
+	setCell(techSheet, "A14", "Rate Schedule E-ELEC")
+	setCell(techSheet, "G14", "Summer")
+	setCell(techSheet, "H14", "Peak")
+	setCell(techSheet, "I14", "0.55214")
 
-	f.SetCellValue(techSheet, "H15", "Part-Peak")
-	f.SetCellValue(techSheet, "I15", "0.39026")
+	setCell(techSheet, "H15", "Part-Peak")
+	setCell(techSheet, "I15", "0.39026")
 
-	f.SetCellValue(techSheet, "H16", "Off-Peak")
-	f.SetCellValue(techSheet, "I16", "0.33358")
+	setCell(techSheet, "H16", "Off-Peak")
+	setCell(techSheet, "I16", "0.33358")
 
-	f.SetCellValue(techSheet, "G17", "Winter")
-	f.SetCellValue(techSheet, "H17", "Peak")
-	f.SetCellValue(techSheet, "I17", "0.32063")
+	setCell(techSheet, "G17", "Winter")
+	setCell(techSheet, "H17", "Peak")
+	setCell(techSheet, "I17", "0.32063")
 
-	f.SetCellValue(techSheet, "H18", "Part-Peak")
-	f.SetCellValue(techSheet, "I18", "0.29854")
+	setCell(techSheet, "H18", "Part-Peak")
+	setCell(techSheet, "I18", "0.29854")
 
-	f.SetCellValue(techSheet, "H19", "Off-Peak")
-	f.SetCellValue(techSheet, "I19", "0.28468")
+	setCell(techSheet, "H19", "Off-Peak")
+	setCell(techSheet, "I19", "0.28468")
 
 	// Save to temporary file
 	tmpDir := t.TempDir()

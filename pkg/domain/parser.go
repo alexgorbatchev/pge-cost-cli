@@ -18,7 +18,9 @@ func ParseSpreadsheet(filePath string, baseDb RatesDatabase) (RatesDatabase, err
 	if err != nil {
 		return RatesDatabase{}, fmt.Errorf("opening excel file: %w", err)
 	}
-	defer f.Close()
+	defer func() {
+		_ = f.Close() // best-effort file close
+	}()
 
 	updatedDb := RatesDatabase{
 		LastUpdated: time.Now().Format("2006-01-02"),
@@ -386,7 +388,9 @@ func DownloadFile(url string, destPath string) error {
 	if err != nil {
 		return fmt.Errorf("http get %s: %w", url, err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close() // best-effort body close
+	}()
 
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("bad HTTP status: %s", resp.Status)
@@ -396,11 +400,17 @@ func DownloadFile(url string, destPath string) error {
 	if err != nil {
 		return fmt.Errorf("create file %s: %w", destPath, err)
 	}
-	defer out.Close()
+	defer func() {
+		_ = out.Close() // best-effort cleanup on early return
+	}()
 
 	_, err = io.Copy(out, resp.Body)
 	if err != nil {
 		return fmt.Errorf("writing body to %s: %w", destPath, err)
+	}
+
+	if err := out.Close(); err != nil {
+		return fmt.Errorf("closing output file %s: %w", destPath, err)
 	}
 
 	return nil

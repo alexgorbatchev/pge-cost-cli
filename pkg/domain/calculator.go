@@ -132,7 +132,7 @@ func CalculateTOUHours(year int, seasons *SeasonConfigs, schedule *PlanSchedule)
 
 	for t := start; !t.After(end); t = t.Add(time.Hour) {
 		// 1. Determine Season
-		season := "winter"
+		var season string
 		if IsInSeason(t, seasons.Summer) {
 			season = "summer"
 		} else if IsInSeason(t, seasons.Winter) {

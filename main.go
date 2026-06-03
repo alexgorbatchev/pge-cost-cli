@@ -12,6 +12,8 @@ import (
 	"github.com/jedib0t/go-pretty/v6/table"
 )
 
+var version = "dev"
+
 func main() {
 	// If the user requests "fetch", route to the fetch subcommand
 	if len(os.Args) > 1 && os.Args[1] == "fetch" {
@@ -25,6 +27,7 @@ func main() {
 	tierFlag := flag.Int("tier", 2, "Tier to use for E-1 tiered plan (1 or 2, default 2)")
 	dbFlag := flag.String("db", "rates.json", "Path to rates JSON database file")
 	yearFlag := flag.Int("year", 2026, "The calendar year for scheduling weights (default 2026)")
+	versionFlag := flag.Bool("version", false, "Print the version and exit")
 
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "PG&E Continuous Running Cost Estimator CLI\n\n")
@@ -38,6 +41,11 @@ func main() {
 	}
 
 	flag.Parse()
+
+	if *versionFlag {
+		fmt.Printf("pge-cost version %s\n", version)
+		return
+	}
 
 	// Validation
 	if *wattsFlag <= 0 {

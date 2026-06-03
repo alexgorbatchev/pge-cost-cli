@@ -1,0 +1,6 @@
+# Binaries
+pge-cost
+
+# Temporary files and local playgrounds
+.tmp/
+.workspaces/

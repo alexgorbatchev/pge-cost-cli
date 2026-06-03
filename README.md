@@ -31,30 +31,30 @@ Estimate continuous 24/7 cost for a device by specifying its constant power draw
 
 ```bash
 # Estimate cost for a 150-watt device on the E-TOU-C plan (4-9 PM Everyday Peak)
-./pge-cost --watts 150 --plan E-TOU-C
+pge-cost --watts 150 --plan E-TOU-C
 ```
 
 #### Expected Output:
 ```text
-╭──────────────────────────────────────────────────────────────────────────╮
-│ PG&E 24/7 DEVICE SPECIFICATIONS (2026)                                   │
-├────────────────┬─────────────────────────────────────────────────────────┤
-│ PARAMETER      │ VALUE                                                   │
-├────────────────┼─────────────────────────────────────────────────────────┤
-│ Device Wattage │ 150.0 W (0.150 kW)                                      │
-│ Selected Plan  │ E-TOU-C - Residential Time-Of-Use (4-9 PM Everyday) [1] │
-│ Effective Rate │ $0.39094 per kWh (Weighted 24/7 Average) [2]            │
-╰────────────────┴─────────────────────────────────────────────────────────╯
+╭──────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ PG&E 24/7 DEVICE SPECIFICATIONS (2026)                                                                   │
+├────────────────────────────────┬─────────────────────────────────────────────────────────────────────────┤
+│ PARAMETER                      │ VALUE                                                                   │
+├────────────────────────────────┼─────────────────────────────────────────────────────────────────────────┤
+│ Device Wattage                 │ 150.0 W (0.150 kW)                                                      │
+│ Selected Plan                  │ E-TOU-C - Residential Time-Of-Use (4-9 PM Everyday) [1]                 │
+│ Effective Rate                 │ $0.39094 per kWh (Weighted 24/7 Average) [2]                            │
+╰────────────────────────────────┴─────────────────────────────────────────────────────────────────────────╯
 
-╭─────────────────────────────────────────────────────────────────╮
-│ ESTIMATED RUNNING COSTS                                         │
-├──────────────────────────┬─────────────────┬────────────────────┤
-│ PERIOD                   │ ENERGY CONSUMED │ ESTIMATED COST [3] │
-├──────────────────────────┼─────────────────┼────────────────────┤
-│ Daily                    │ 3.60 kWh        │ $1.41              │
-│ Monthly (30.42 days avg) │ 109.50 kWh      │ $42.81             │
-│ Annual                   │ 1314.00 kWh     │ $513.69            │
-╰──────────────────────────┴─────────────────┴────────────────────╯
+╭──────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ ESTIMATED RUNNING COSTS                                                                                  │
+├────────────────────────────────┬─────────────────────────────┬───────────────────────────────────────────┤
+│ PERIOD                         │ ENERGY CONSUMED             │ ESTIMATED COST [3]                        │
+├────────────────────────────────┼─────────────────────────────┼───────────────────────────────────────────┤
+│ Daily Running                  │ 3.60 kWh                    │ $1.41                                     │
+│ Monthly Running (30.42d avg)   │ 109.50 kWh                  │ $42.81                                    │
+│ Annual Running (365d)          │ 1314.00 kWh                 │ $513.69                                   │
+╰────────────────────────────────┴─────────────────────────────┴───────────────────────────────────────────╯
 
 [1] Selected rates loaded from PG&E database "rates.json" (last updated 2026-06-03).
 [2] Calculated using hour-by-hour calendar scheduling weights for year 2026.
@@ -66,10 +66,10 @@ For the tiered `E-1` plan, costs depend on which tier your device's energy draw 
 
 ```bash
 # Calculate using Tier 1 (within baseline allowance)
-./pge-cost --watts 150 --plan E-1 --tier 1
+pge-cost --watts 150 --plan E-1 --tier 1
 
 # Calculate using Tier 2 (above baseline allowance - default)
-./pge-cost --watts 150 --plan E-1 --tier 2
+pge-cost --watts 150 --plan E-1 --tier 2
 ```
 
 ### 2. Synchronization of Rates
@@ -77,7 +77,7 @@ You can automatically synchronize local database records with live PG&E rate str
 
 ```bash
 # Download and synchronize the local database
-./pge-cost fetch
+pge-cost fetch
 ```
 
 ---
@@ -91,7 +91,7 @@ Once downloaded, extract the archive and run the executable:
 ```bash
 # Example for Linux AMD64
 tar -xzf pge-cost_v1.0.0_linux_amd64.tar.gz
-./pge-cost --watts 100 --plan E-TOU-C
+pge-cost --watts 100 --plan E-TOU-C
 ```
 
 ### 2. Build from Source

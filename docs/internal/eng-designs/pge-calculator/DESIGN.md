@@ -248,5 +248,5 @@ Note: Marginal calculations based on total bundled rates.
 ## 14. Definition of Done
 - The command `go test ./...` passes with 100% success.
 - The command `go vet ./...` is completely clean.
-- Executing `./pge-cost --watts 100 --plan E-TOU-C` displays accurate, correct, and readable outputs.
-- Executing `./pge-cost fetch` successfully grabs the spreadsheet, extracts the rates, updates `rates.json`, and subsequent runs use the newly fetched rates.
+- Executing `pge-cost --watts 100 --plan E-TOU-C` displays accurate, correct, and readable outputs.
+- Executing `pge-cost fetch` successfully grabs the spreadsheet, extracts the rates, updates `rates.json`, and subsequent runs use the newly fetched rates.

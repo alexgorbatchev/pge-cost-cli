@@ -31,13 +31,13 @@ func main() {
 
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "PG&E Continuous Running Cost Estimator CLI\n\n")
-		fmt.Fprintf(os.Stderr, "Usage of %s:\n", os.Args[0])
-		fmt.Fprintf(os.Stderr, "  %s --watts <watts> --plan <plan> [options]\n\n", os.Args[0])
+		fmt.Fprintf(os.Stderr, "Usage of pge-cost:\n")
+		fmt.Fprintf(os.Stderr, "  pge-cost --watts <watts> --plan <plan> [options]\n\n")
 		fmt.Fprintf(os.Stderr, "Options:\n")
-		flag.PrintDefaults()
+		printCustomDefaults(flag.CommandLine)
 		fmt.Fprintf(os.Stderr, "\nCommands:\n")
 		fmt.Fprintf(os.Stderr, "  fetch             Download, parse, and update the local rates database\n")
-		fmt.Fprintf(os.Stderr, "                    Usage: %s fetch [--db rates.json] [--url <url>]\n\n", os.Args[0])
+		fmt.Fprintf(os.Stderr, "                    Usage: pge-cost fetch [--db rates.json] [--url <url>]\n\n")
 	}
 
 	flag.Parse()
@@ -60,7 +60,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	planID := strings.ToUpper(*planFlag)
+	planID := normalizePlan(*planFlag)
 	validPlans := map[string]bool{
 		"E-1":     true,
 		"E-TOU-C": true,
@@ -115,7 +115,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Format Output Table
+	// Format Output Tables (Sized to match perfectly at 108 characters total width)
 	planDesc := plan.Name
 	if planID == "E-1" {
 		planDesc = fmt.Sprintf("%s (Tier %d)", planDesc, *tierFlag)
@@ -131,6 +131,10 @@ func main() {
 		{"Selected Plan", fmt.Sprintf("%s - %s [1]", result.PlanID, planDesc)},
 		{"Effective Rate", fmt.Sprintf("$%.5f per kWh (Weighted 24/7 Average) [2]", result.EffectiveRate)},
 	})
+	tw1.SetColumnConfigs([]table.ColumnConfig{
+		{Number: 1, WidthMin: 30, WidthMax: 30},
+		{Number: 2, WidthMin: 71, WidthMax: 71},
+	})
 	tw1.Render()
 
 	fmt.Println()
@@ -141,9 +145,14 @@ func main() {
 	tw2.SetTitle("ESTIMATED RUNNING COSTS")
 	tw2.AppendHeader(table.Row{"Period", "Energy Consumed", "Estimated Cost [3]"})
 	tw2.AppendRows([]table.Row{
-		{"Daily", fmt.Sprintf("%.2f kWh", result.DailyEnergy), fmt.Sprintf("$%.2f", result.DailyCost)},
-		{"Monthly (30.42 days avg)", fmt.Sprintf("%.2f kWh", result.DailyEnergy*30.4167), fmt.Sprintf("$%.2f", result.MonthlyCost)},
-		{"Annual", fmt.Sprintf("%.2f kWh", result.DailyEnergy*365.0), fmt.Sprintf("$%.2f", result.AnnualCost)},
+		{"Daily Running", fmt.Sprintf("%.2f kWh", result.DailyEnergy), fmt.Sprintf("$%.2f", result.DailyCost)},
+		{"Monthly Running (30.42d avg)", fmt.Sprintf("%.2f kWh", result.DailyEnergy*30.4167), fmt.Sprintf("$%.2f", result.MonthlyCost)},
+		{"Annual Running (365d)", fmt.Sprintf("%.2f kWh", result.DailyEnergy*365.0), fmt.Sprintf("$%.2f", result.AnnualCost)},
+	})
+	tw2.SetColumnConfigs([]table.ColumnConfig{
+		{Number: 1, WidthMin: 30, WidthMax: 30},
+		{Number: 2, WidthMin: 27, WidthMax: 27},
+		{Number: 3, WidthMin: 41, WidthMax: 41},
 	})
 	tw2.Render()
 
@@ -169,8 +178,8 @@ func handleFetch() {
 
 	fetchCmd.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Fetch and update rates from PG&E spreadsheet.\n\n")
-		fmt.Fprintf(os.Stderr, "Usage of %s fetch:\n", os.Args[0])
-		fetchCmd.PrintDefaults()
+		fmt.Fprintf(os.Stderr, "Usage of pge-cost fetch:\n")
+		printCustomDefaults(fetchCmd)
 		fmt.Fprintln(os.Stderr)
 	}
 
@@ -258,4 +267,63 @@ func handleFetch() {
 	})
 	tw.Render()
 	fmt.Println()
+}
+
+// printCustomDefaults customizes flag output to use modern --double-dash notation.
+func printCustomDefaults(fs *flag.FlagSet) {
+	fs.VisitAll(func(f *flag.Flag) {
+		var b strings.Builder
+		fmt.Fprintf(&b, "  --%s", f.Name)
+		name, usage := flag.UnquoteUsage(f)
+		if len(name) > 0 {
+			b.WriteString(" ")
+			b.WriteString(name)
+		}
+		// Align default formatting behavior
+		if b.Len() <= 4 {
+			b.WriteString("\t")
+		} else {
+			b.WriteString("\n    \t")
+		}
+		b.WriteString(strings.ReplaceAll(usage, "\n", "\n    \t"))
+
+		// Check if it has a non-zero default value to display
+		if !isZeroValue(f, f.DefValue) {
+			if name == "string" {
+				fmt.Fprintf(&b, " (default %q)", f.DefValue)
+			} else {
+				fmt.Fprintf(&b, " (default %s)", f.DefValue)
+			}
+		}
+		fmt.Fprintln(os.Stderr, b.String())
+	})
+}
+
+// isZeroValue determines whether the string represents the zero value for a flag.
+func isZeroValue(f *flag.Flag, value string) bool {
+	switch value {
+	case "0", "false", "", `""`:
+		return true
+	}
+	return false
+}
+
+// normalizePlan normalizes common billing statement aliases to canonical database plan keys.
+func normalizePlan(p string) string {
+	p = strings.ToUpper(strings.TrimSpace(p))
+	switch p {
+	case "E1", "E-1":
+		return "E-1"
+	case "ETOUC", "E-TOU-C", "TOUC", "TOU-C":
+		return "E-TOU-C"
+	case "ETOUD", "E-TOU-D", "TOUD", "TOU-D":
+		return "E-TOU-D"
+	case "EV2", "EV2A", "EV2-A", "EV-2A":
+		return "EV2"
+	case "EELEC", "E-ELEC", "ELEC":
+		return "E-ELEC"
+	case "EVB", "EV-B":
+		return "EV-B"
+	}
+	return p
 }
